@@ -1,0 +1,45 @@
+name: AURA
+options:
+  bundleIdPrefix: de.julian
+  deploymentTarget:
+    iOS: "17.0"
+
+targets:
+  AURA:
+    type: application
+    platform: iOS
+    sources:
+      - AURAApp.swift
+      - path: Web
+        type: folder
+      - Assets.xcassets
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: AURA
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UIUserInterfaceStyle: Dark
+        UIRequiresFullScreen: true
+        UIRequiredDeviceCapabilities:
+          - arm64
+        ITSAppUsesNonExemptEncryption: false
+        NSMicrophoneUsageDescription: "AURA hoert zu, damit du mit ihr sprechen kannst."
+        NSLocationWhenInUseUsageDescription: "Fuer Wetter und Routen an deinem Standort."
+        NSCameraUsageDescription: "Fuer die Gestensteuerung."
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        LSApplicationQueriesSchemes:
+          - maps
+          - tel
+          - spotify
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.julian.aura
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
