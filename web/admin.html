@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J.A.R.V.I.S. — Admin</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body { overflow-y: auto; align-items: flex-start; justify-content: center; }
+  #admin-wrap { width: min(820px, calc(100vw - 40px)); margin: 36px auto; padding-bottom: 60px; }
+
+  #admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+  #admin-mark {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 20px; font-weight: 700; letter-spacing: 6px;
+    background: linear-gradient(120deg, var(--gold-soft), var(--gold) 60%, var(--gold-dim));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  #admin-sub { font-size: 10px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
+  #admin-logout {
+    height: 38px; padding: 0 18px; border-radius: 19px; border: 1px solid var(--border);
+    background: var(--panel2); color: var(--text-med); font-family: inherit; font-size: 12px;
+    cursor: pointer; transition: all .2s;
+  }
+  #admin-logout:hover { border-color: var(--border-b); color: var(--text); }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 22px; }
+  .stat-card {
+    background: var(--panel); backdrop-filter: blur(18px); border: 1px solid var(--border);
+    border-radius: 18px; padding: 16px 14px; text-align: center;
+  }
+  .stat-num { font-size: 24px; font-weight: 200; color: var(--gold-soft); letter-spacing: -0.5px; }
+  .stat-label { font-size: 9px; color: var(--text-dim); letter-spacing: .5px; text-transform: uppercase; margin-top: 6px; }
+  .sys-detail { font-size: 11px; color: var(--text-med); text-align: center; padding: 2px 4px 4px; }
+
+  /* Nutzungsdiagramm */
+  #chart-bars { display: flex; align-items: flex-end; gap: 8px; height: 110px; padding: 10px 4px 0; }
+  .chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .chart-bar {
+    width: 100%; max-width: 34px; border-radius: 6px 6px 2px 2px;
+    background: linear-gradient(180deg, var(--gold-soft), var(--gold-dim)); min-height: 2px;
+    transition: height .4s ease;
+  }
+  .chart-day { font-size: 9px; color: var(--text-dim); }
+  .chart-val { font-size: 10px; color: var(--text-med); }
+
+  /* Aktivitäts-Feed */
+  #activity-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; }
+  .activity-row {
+    display: flex; justify-content: space-between; gap: 10px; font-size: 12px;
+    padding: 8px 10px; background: var(--panel2); border: 1px solid var(--border); border-radius: 10px;
+  }
+  .activity-row b { color: var(--gold-soft); font-weight: 600; }
+  .activity-time { color: var(--text-dim); font-size: 10px; white-space: nowrap; }
+
+  /* Broadcast */
+  #broadcast-form, .broadcast-form-row { display: flex; gap: 8px; }
+  #broadcast-input, #login-message-input {
+    flex: 1; height: 42px; border-radius: 12px; border: 1px solid var(--border); background: var(--panel2);
+    color: var(--text); font-family: inherit; font-size: 13px; padding: 0 14px; outline: none;
+  }
+  #broadcast-input:focus { border-color: var(--border-b); }
+  #broadcast-send, #login-message-send {
+    height: 42px; padding: 0 20px; border-radius: 12px; border: none; cursor: pointer; font-family: inherit;
+    font-size: 12px; font-weight: 700; background: linear-gradient(120deg, var(--gold-soft), var(--gold)); color: #1a1410;
+  }
+  #broadcast-status { font-size: 11px; color: var(--good); margin-top: 8px; min-height: 14px; }
+
+  /* Wartungsmodus / Login-Nachricht */
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .toggle-row span { font-size: 12px; color: var(--text); }
+  .switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch-track {
+    position: absolute; inset: 0; background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 13px; cursor: pointer; transition: all .2s;
+  }
+  .switch-track::before {
+    content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 50%; transform: translateY(-50%);
+    background: var(--text-dim); border-radius: 50%; transition: all .2s;
+  }
+  .switch input:checked + .switch-track { background: rgba(70,225,255,0.18); border-color: var(--border-b); }
+  .switch input:checked + .switch-track::before { left: 23px; background: linear-gradient(120deg, var(--gold-soft), var(--gold)); }
+
+  /* Änderungsprotokoll */
+  #changelog-list { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
+  .changelog-row {
+    display: flex; gap: 10px; font-size: 12px; color: var(--text-med); line-height: 1.5;
+    padding: 8px 10px; background: var(--panel2); border: 1px solid var(--border); border-radius: 10px;
+  }
+  .changelog-num { color: var(--gold-soft); font-weight: 700; flex-shrink: 0; }
+
+  #user-section, #sys-section {
+    background: var(--panel); backdrop-filter: blur(18px); border: 1px solid var(--border);
+    border-radius: 22px; padding: 22px;
+  }
+  #user-section h2, #sys-section h2 { font-size: 13px; letter-spacing: 1.5px; color: var(--gold-soft); font-weight: 700; margin-bottom: 16px; text-transform: uppercase; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 10px; letter-spacing: .5px; color: var(--text-dim); text-transform: uppercase; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  td { padding: 12px 10px; font-size: 13px; color: var(--text); border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  .badge-admin { font-size: 9px; font-weight: 700; letter-spacing: .5px; color: #1a1410; background: linear-gradient(120deg, var(--gold-soft), var(--gold)); padding: 2px 8px; border-radius: 8px; margin-left: 6px; }
+  .user-id-cell { font-family: "SFMono-Regular", Consolas, monospace; color: var(--text-dim); font-size: 12px; }
+  .row-actions { display: flex; gap: 6px; }
+  .mini-btn {
+    height: 30px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--border);
+    background: var(--panel2); color: var(--text-med); font-family: inherit; font-size: 11px;
+    cursor: pointer; transition: all .2s; white-space: nowrap;
+  }
+  .mini-btn:hover { border-color: var(--border-b); color: var(--gold-soft); }
+  .mini-btn.danger:hover { border-color: var(--bad); color: var(--bad); }
+
+  #empty-users { text-align: center; color: var(--text-dim); font-size: 12px; padding: 30px 0; }
+
+  /* Reset-PIN-Dialog */
+  #reset-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 50;
+    align-items: center; justify-content: center;
+  }
+  #reset-overlay.show { display: flex; }
+  #reset-box {
+    width: min(320px, calc(100vw - 48px)); background: var(--panel); border: 1px solid var(--border);
+    border-radius: 20px; padding: 24px; backdrop-filter: blur(18px);
+  }
+  #reset-box h3 { font-size: 13px; color: var(--text); margin-bottom: 14px; }
+  #reset-pin {
+    width: 100%; height: 42px; border-radius: 12px; border: 1px solid var(--border); background: var(--panel2);
+    color: var(--text); font-family: inherit; font-size: 14px; padding: 0 14px; outline: none; margin-bottom: 14px;
+  }
+  #reset-pin:focus { border-color: var(--border-b); }
+  #reset-error { font-size: 11px; color: var(--bad); min-height: 14px; margin-bottom: 10px; }
+  .dialog-actions { display: flex; gap: 8px; }
+  .dialog-actions button {
+    flex: 1; height: 40px; border-radius: 20px; border: none; cursor: pointer; font-family: inherit;
+    font-size: 12px; font-weight: 700;
+  }
+  #reset-cancel { background: var(--panel2); color: var(--text-med); border: 1px solid var(--border) !important; }
+  #reset-confirm { background: linear-gradient(120deg, var(--gold-soft), var(--gold)); color: #1a1410; }
+</style>
+<script src="lokal.js"></script>
+</head>
+<body>
+
+<canvas id="hexbg"></canvas>
+
+
+<div id="admin-wrap">
+  <div id="admin-header">
+    <div>
+      <div id="admin-mark">JARVIS</div>
+      <div id="admin-sub">Admin-Übersicht</div>
+    </div>
+    <button id="admin-logout">Abmelden</button>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-num" id="stat-users">—</div><div class="stat-label">Benutzer</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-messages">—</div><div class="stat-label">Nachrichten gesamt</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-sessions">—</div><div class="stat-label">Aktive Sitzungen</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-db">—</div><div class="stat-label">Datenbank-Status</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-dbsize">—</div><div class="stat-label">DB-Größe (MB)</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-storage">—</div><div class="stat-label">Dateien gesamt (MB)</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-notes">—</div><div class="stat-label">Notizen gesamt</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-accounts">—</div><div class="stat-label">Gespeicherte Konten</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-top">—</div><div class="stat-label">Aktivster Nutzer</div></div>
+  </div>
+
+  <div id="sys-section" style="margin-bottom: 22px;">
+    <h2>Systemauslastung</h2>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num" id="sys-cpu">—</div><div class="stat-label">CPU</div></div>
+      <div class="stat-card"><div class="stat-num" id="sys-ram">—</div><div class="stat-label">RAM</div></div>
+      <div class="stat-card"><div class="stat-num" id="sys-disk">—</div><div class="stat-label">Festplatte</div></div>
+      <div class="stat-card"><div class="stat-num" id="sys-uptime">—</div><div class="stat-label">Laufzeit</div></div>
+    </div>
+    <div id="sys-detail" class="sys-detail"></div>
+  </div>
+
+  <div id="sys-section" style="margin-bottom: 22px;">
+    <h2>Nachrichten — letzte 7 Tage</h2>
+    <div id="chart-bars"></div>
+  </div>
+
+  <div id="sys-section" style="margin-bottom: 22px;">
+    <h2>Wartung & Login-Seite</h2>
+    <div class="toggle-row">
+      <span>Wartungsmodus (sperrt neue Logins/Registrierungen außer für Admin)</span>
+      <label class="switch">
+        <input type="checkbox" id="maintenance-toggle">
+        <span class="switch-track"></span>
+      </label>
+    </div>
+    <div id="login-message-form" class="broadcast-form-row">
+      <input id="login-message-input" type="text" placeholder="Mitteilung auf der Login-Seite (leer lassen zum Entfernen)…">
+      <button id="login-message-send">Speichern</button>
+    </div>
+    <div id="login-message-status" style="font-size: 11px; color: var(--good); margin-top: 8px; min-height: 14px;"></div>
+  </div>
+
+  <div id="sys-section" style="margin-bottom: 22px;">
+    <h2>Mitteilung an alle Benutzer</h2>
+    <div id="broadcast-form">
+      <input id="broadcast-input" type="text" placeholder="z.B. 'Wartung am Sonntag ab 20 Uhr'…">
+      <button id="broadcast-send">Senden</button>
+    </div>
+    <div id="broadcast-status"></div>
+  </div>
+
+  <div id="sys-section" style="margin-bottom: 22px;">
+    <h2>Änderungsprotokoll</h2>
+    <div id="changelog-list"></div>
+  </div>
+
+  <div id="sys-section" style="margin-bottom: 22px;">
+    <h2>Live-Aktivität</h2>
+    <div id="activity-list"></div>
+    <div id="empty-activity" class="empty-hint" style="display:none">Noch keine Aktivität.</div>
+  </div>
+
+  <div id="user-section">
+    <h2>Benutzerkonten</h2>
+    <table id="user-table">
+      <thead>
+        <tr><th>ID</th><th>Name</th><th>Erstellt</th><th>Letzter Login</th><th>Nachr.</th><th>Speicher</th><th></th></tr>
+      </thead>
+      <tbody id="user-rows"></tbody>
+    </table>
+    <div id="empty-users" style="display:none">Noch keine Benutzerkonten.</div>
+  </div>
+</div>
+
+<div id="reset-overlay">
+  <div id="reset-box">
+    <h3>Neuer PIN für <span id="reset-username"></span></h3>
+    <input id="reset-pin" type="text" inputmode="numeric" placeholder="Mindestens 4 Ziffern">
+    <div id="reset-error"></div>
+    <div class="dialog-actions">
+      <button id="reset-cancel">Abbrechen</button>
+      <button id="reset-confirm">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script src="hexbg.js"></script>
+<script>
+let targetUsername = null;
+
+async function loadDashboard() {
+  const statsRes = await fetch("/api/admin/stats").then(r => r.json()).catch(() => null);
+  if (statsRes) {
+    document.getElementById("stat-users").textContent = statsRes.benutzer_gesamt ?? "—";
+    document.getElementById("stat-messages").textContent = statsRes.nachrichten_gesamt ?? "—";
+    document.getElementById("stat-sessions").textContent = statsRes.aktive_sitzungen ?? "—";
+    document.getElementById("stat-db").textContent = statsRes.db_aktiv ? "Aktiv" : "Offline";
+    document.getElementById("stat-dbsize").textContent = statsRes.db_groesse_mb ?? "—";
+    document.getElementById("stat-storage").textContent = statsRes.speicher_gesamt_mb ?? "—";
+    document.getElementById("stat-notes").textContent = statsRes.notizen_gesamt ?? "—";
+    document.getElementById("stat-accounts").textContent = statsRes.konten_gesamt ?? "—";
+    document.getElementById("stat-top").textContent = statsRes.top_user
+      ? `${statsRes.top_user} (${statsRes.top_user_nachrichten})` : "—";
+
+    const sys = statsRes.system || {};
+    if (sys.verfuegbar) {
+      document.getElementById("sys-cpu").textContent = sys.cpu_prozent + "%";
+      document.getElementById("sys-ram").textContent = sys.ram_prozent + "%";
+      document.getElementById("sys-disk").textContent = sys.disk_prozent + "%";
+      document.getElementById("sys-uptime").textContent = formatUptime(sys.uptime_sec);
+      document.getElementById("sys-detail").textContent =
+        `RAM: ${sys.ram_belegt_gb} / ${sys.ram_gesamt_gb} GB · ` +
+        `Festplatte: ${sys.disk_belegt_gb} / ${sys.disk_gesamt_gb} GB · ` +
+        `JARVIS-Prozess: ${sys.prozess_ram_mb} MB RAM`;
+    } else {
+      ["sys-cpu", "sys-ram", "sys-disk"].forEach(id => document.getElementById(id).textContent = "—");
+      document.getElementById("sys-uptime").textContent = formatUptime(sys.uptime_sec || 0);
+      document.getElementById("sys-detail").textContent =
+        "Detaillierte Systemwerte benötigen das Paket 'psutil' (pip install psutil).";
+    }
+  }
+
+  const users = await fetch("/api/admin/users").then(r => r.json()).catch(() => []);
+  const tbody = document.getElementById("user-rows");
+  tbody.innerHTML = "";
+  if (!users.length) {
+    document.getElementById("empty-users").style.display = "block";
+    return;
+  }
+  document.getElementById("empty-users").style.display = "none";
+
+  users.forEach(u => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="user-id-cell">${u.id}</td>
+      <td>${escapeHtml(u.username)}${u.is_admin ? '<span class="badge-admin">ADMIN</span>' : ""}</td>
+      <td>${u.created_at}</td>
+      <td>${escapeHtml(u.last_login)}</td>
+      <td>${u.nachrichten}</td>
+      <td>${u.speicher_mb} MB</td>
+      <td>
+        <div class="row-actions">
+          <button class="mini-btn" data-action="reset" data-user="${escapeHtml(u.username)}">PIN zurücksetzen</button>
+          ${u.is_admin ? "" : `<button class="mini-btn danger" data-action="delete" data-user="${escapeHtml(u.username)}">Löschen</button>`}
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('[data-action="reset"]').forEach(btn => {
+    btn.addEventListener("click", () => openResetDialog(btn.dataset.user));
+  });
+  tbody.querySelectorAll('[data-action="delete"]').forEach(btn => {
+    btn.addEventListener("click", () => deleteUser(btn.dataset.user));
+  });
+}
+
+function escapeHtml(s) {
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function openResetDialog(username) {
+  targetUsername = username;
+  document.getElementById("reset-username").textContent = username;
+  document.getElementById("reset-pin").value = "";
+  document.getElementById("reset-error").textContent = "";
+  document.getElementById("reset-overlay").classList.add("show");
+}
+document.getElementById("reset-cancel").addEventListener("click", () => {
+  document.getElementById("reset-overlay").classList.remove("show");
+});
+document.getElementById("reset-confirm").addEventListener("click", async () => {
+  const pin = document.getElementById("reset-pin").value.trim();
+  const errEl = document.getElementById("reset-error");
+  if (!/^\d{4,}$/.test(pin)) {
+    errEl.textContent = "Mindestens 4 Ziffern, nur Zahlen.";
+    return;
+  }
+  const res = await fetch("/api/admin/reset-password", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: targetUsername, password: pin }),
+  }).then(r => r.json()).catch(() => ({ ok: false, error: "Server nicht erreichbar." }));
+  if (!res.ok) {
+    errEl.textContent = res.error || "Fehlgeschlagen.";
+    return;
+  }
+  errEl.style.color = "var(--good)";
+  errEl.textContent = "PIN aktualisiert ✓";
+  setTimeout(() => {
+    document.getElementById("reset-overlay").classList.remove("show");
+    errEl.style.color = "";
+  }, 700);
+});
+
+async function deleteUser(username) {
+  if (!confirm(`Konto "${username}" wirklich endgültig löschen? Alle Notizen, Konten, Dateien und Erinnerungen gehen unwiderruflich verloren.`)) return;
+  const res = await fetch("/api/admin/delete-user", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username }),
+  }).then(r => r.json()).catch(() => ({ ok: false }));
+  if (res.ok) loadDashboard();
+  else alert(res.error || "Löschen fehlgeschlagen.");
+}
+
+document.getElementById("admin-logout").addEventListener("click", async () => {
+  await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+  window.location.href = "/";
+});
+
+function formatUptime(sec) {
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (d > 0) return `${d}T ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+async function loadChart() {
+  const data = await fetch("/api/admin/chart").then(r => r.json()).catch(() => []);
+  const wrap = document.getElementById("chart-bars");
+  wrap.innerHTML = "";
+  if (!Array.isArray(data) || !data.length) return;
+  const max = Math.max(1, ...data.map(d => d.anzahl));
+  data.forEach(d => {
+    const col = document.createElement("div");
+    col.className = "chart-col";
+    const heightPx = Math.round((d.anzahl / max) * 90) + 2;
+    col.innerHTML = `
+      <div class="chart-val">${d.anzahl}</div>
+      <div class="chart-bar" style="height:${heightPx}px"></div>
+      <div class="chart-day">${d.tag}</div>
+    `;
+    wrap.appendChild(col);
+  });
+}
+
+async function loadActivity() {
+  const data = await fetch("/api/admin/activity").then(r => r.json()).catch(() => []);
+  const list = document.getElementById("activity-list");
+  list.innerHTML = "";
+  if (!Array.isArray(data) || !data.length) {
+    document.getElementById("empty-activity").style.display = "block";
+    return;
+  }
+  document.getElementById("empty-activity").style.display = "none";
+  data.forEach(a => {
+    const row = document.createElement("div");
+    row.className = "activity-row";
+    row.innerHTML = `<span><b>${escapeHtml(a.username)}</b> ${escapeHtml(a.aktion)}</span><span class="activity-time">${a.zeit}</span>`;
+    list.appendChild(row);
+  });
+}
+
+document.getElementById("broadcast-send").addEventListener("click", async () => {
+  const input = document.getElementById("broadcast-input");
+  const status = document.getElementById("broadcast-status");
+  const message = input.value.trim();
+  if (!message) return;
+  const res = await fetch("/api/admin/broadcast", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message }),
+  }).then(r => r.json()).catch(() => ({ ok: false }));
+  if (res.ok) {
+    status.style.color = "var(--good)";
+    status.textContent = "Gesendet — erscheint bei allen Benutzern beim nächsten Laden der Seite.";
+    input.value = "";
+  } else {
+    status.style.color = "var(--bad)";
+    status.textContent = res.error || "Senden fehlgeschlagen.";
+  }
+});
+
+// ── Wartungsmodus ──────────────────────────────────────────────────────────
+async function loadMaintenanceState() {
+  const status = await fetch("/api/system-status").then(r => r.json()).catch(() => ({}));
+  document.getElementById("maintenance-toggle").checked = !!status.wartung;
+  document.getElementById("login-message-input").value = status.login_nachricht || "";
+}
+document.getElementById("maintenance-toggle").addEventListener("change", async (e) => {
+  await fetch("/api/admin/maintenance", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ enabled: e.target.checked }),
+  }).catch(() => {});
+});
+
+document.getElementById("login-message-send").addEventListener("click", async () => {
+  const input = document.getElementById("login-message-input");
+  const status = document.getElementById("login-message-status");
+  const res = await fetch("/api/admin/login-message", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: input.value.trim() }),
+  }).then(r => r.json()).catch(() => ({ ok: false }));
+  status.style.color = res.ok ? "var(--good)" : "var(--bad)";
+  status.textContent = res.ok ? "Gespeichert." : (res.error || "Fehlgeschlagen.");
+});
+
+// ── Änderungsprotokoll ───────────────────────────────────────────────────
+async function loadChangelog() {
+  const data = await fetch("/api/admin/changelog").then(r => r.json()).catch(() => ({ eintraege: [] }));
+  const list = document.getElementById("changelog-list");
+  list.innerHTML = "";
+  (data.eintraege || []).slice().reverse().forEach((entry, i) => {
+    const row = document.createElement("div");
+    row.className = "changelog-row";
+    row.innerHTML = `<span class="changelog-num">${data.eintraege.length - i}.</span><span>${escapeHtml(entry)}</span>`;
+    list.appendChild(row);
+  });
+}
+
+loadDashboard();
+loadChart();
+loadActivity();
+loadMaintenanceState();
+loadChangelog();
+setInterval(loadDashboard, 8000); // hält CPU/RAM/aktive Sitzungen live aktuell
+setInterval(loadActivity, 8000);
+setInterval(loadChart, 60000);
+</script>
+</body>
+</html>
